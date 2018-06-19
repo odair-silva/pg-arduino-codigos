@@ -1,51 +1,42 @@
-/*
-  AnalogReadSerial
-
-  Reads an analog input on pin 0, prints the result to the Serial Monitor.
-  Graphical representation is available using Serial Plotter (Tools > Serial Plotter menu).
-  Attach the center pin of a potentiometer to pin A0, and the outside pins to +5V and ground.
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/AnalogReadSerial
-*/
-
 // the setup routine runs once when you press reset:
 void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
-  pinMode(A0, INPUT);
-  pinMode(A1, INPUT);
-  pinMode(A2, INPUT);
+  pinMode(A0, INPUT); //leitura do shunt > Vs
+  pinMode(A1, INPUT); //leitura da referência > GND
+  pinMode(A2, INPUT); //leitura da tensão do divisor > V1
+
 }
-
+//definições das constantes do sistema
+const float v_arduino = 3.3;
+const int range = 1023;
+const int v_max = 15;
+const int R1 = 2460;
+const int R2 = 9870;
+  
 float Referencia = 0;
-float V_Shunt = 0;
-float V_Divisor = 0;
+float LeituraShunt = 0;
+float LeituraDivisor = 0;
 
-float Volts = 0;
-float RawAmp = 0;
+float Vs = 0;
+float V1 = 0;
 
-float Amp = 0;
-float Volt = 0;
-
-float Va = 0;
+float Is = 0; // corrente no resistor shunt
+float Va = 0; // tensão de interesse, tensão no motor
 
 // the loop routine runs over and over again forever:
 void loop() {
-  V_Shunt = (analogRead(A0) - analogRead(A1)) * (3.3 / 1023.0);
- //V_Shunt = map(analogRead(A0), 0, 1023, 0, 3);
-  Referencia= analogRead(A1);
-  Volts = ((V_Shunt - Referencia) * (3.3 / 1023.0));
-  Amp = (Volts / 23.6)*100;
+  //definições de variáveis
+  LeituraShunt = analogRead(A0);
+  Referencia = analogRead(A1);
+  LeituraDivisor = analogRead(A2);
 
-  V_Divisor = (analogRead(A2) - analogRead(A1)) * (3.3 / 1023.0);
-  //Va = (V_Divisor - Referencia) * (3.3 / 1023.0);
+  Vs = (LeituraShunt - Referencia) * (v_arduino / range);
+  Is = (Vs / v_max)*1000; //valor da corrente em mA
 
-  Va = (V_Divisor) * (2500 + 10000)/(2500) - (V_Shunt);
-  //Serial.println(Volt);  
-  //Serial.print(V_Divisao); 
-  Serial.println(Va);  
-  //Serial.print("mA x10: ");   Serial.println(Volt);
-  //delay(100);        // delay in between reads for stability
+  V1 = (LeituraDivisor - Referencia) * (v_arduino / range);
+  Va = (V1) * (R1+ R2)/(R1) - (Vs);
+  
+  Serial.println(Va); //plotta o gráfico da tensão sobre o motor
+  //Serial.println(Is); //plotta o gráfico da corrente no motor
 }
