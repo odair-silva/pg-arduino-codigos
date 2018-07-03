@@ -25,9 +25,9 @@ volatile float Va = 0; // tensão de interesse, tensão no motor
 //definições das variáveis da leitura do RPM
 volatile int RPM = 0;;
 volatile unsigned long pulsos = 0;
+volatile unsigned long timeold = 0;
 volatile unsigned int pulsos_por_volta = 32;
 
-volatile unsigned int teste = 0;
 
 
 
@@ -82,9 +82,9 @@ void pegaRPM(){
   Timer1.stop();
   detachInterrupt(digitalPinToInterrupt(52));
 
-  RPM = (60 * 1000 / pulsos_por_volta) / 100 * pulsos;
+  RPM = (60 * 1000 / pulsos_por_volta) / (millis() - timeold) * pulsos;
+  timeold = millis();
   pulsos = 0;
-  teste++;
       
   attachInterrupt(digitalPinToInterrupt(52), contador, RISING);
   Timer1.start();
