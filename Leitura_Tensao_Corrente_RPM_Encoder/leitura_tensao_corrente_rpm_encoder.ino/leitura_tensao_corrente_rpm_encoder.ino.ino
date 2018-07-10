@@ -29,6 +29,17 @@ volatile unsigned long timeold = 0;
 volatile unsigned int pulsos_por_volta = 32;
 
 
+//definições das variáveis para o uso do IRAM/PWM
+
+volatile int motorPin2 = 2;
+volatile int motorPin3 = 3;
+volatile int motorPin4 = 4;
+volatile int capacitorPin = 6;
+volatile int val = 253;
+volatile int pwm_leitura = 0;
+
+volatile int V_sen = 0;
+
 
 
 
@@ -42,8 +53,7 @@ void setup() {
   pinMode(A2, INPUT); //leitura da tensão do divisor -> V1
   pinMode(52, INPUT); //leitura do canal do encoder
 
-  //chama a função pegaCorrenteTensao a cada 1ms 
-  //Timer0.attachInterrupt(pegaCorrenteTensao).start(10000);
+  pinMode(capacitorPin, OUTPUT);
   
   //chama a função pegaRPM a cada 100ms 
   Timer1.attachInterrupt(pegaRPM).start(100000);
@@ -53,13 +63,32 @@ void setup() {
 }
 
 void loop() {
+
+  //leitura do serial monitor para aumentar ou diminuir o pwm
+  pwm_leitura = Serial.read();
+
+  //condições para que o pwm não passe de 254 nem diminua menos que 127
+  if(pwm_leitura == 'a' && val <= 254){
+    val++;
+  }
+
+  if(pwm_leitura == 'd' && val >= 126){
+    val--;
+  }
+  
+ 
+  
   //nesse loop estarão somente os prints
-  Serial.print("Tensão de entrada: ");
+//  Serial.print("PWM: ");
+//  Serial.print(val); //plotta o gráfico da tensão sobre o motor
+  Serial.print("  Tensão de entrada: ");
   Serial.print(Va); //plotta o gráfico da tensão sobre o motor
   Serial.print("  Corrente no motor: ");
   Serial.print(Is); //plotta o gráfico da corrente no motor
-  Serial.print("  RPM = ");
-  Serial.println(RPM, DEC);
+  Serial.print("  RPM_Encoder = ");
+  Serial.print(RPM, DEC);
+  Serial.print("  RPM_Sensorless = ");
+  Serial.println(V_sen, DEC);
 }
 
 
@@ -72,10 +101,12 @@ void pegaCorrenteTensao(){
   LeituraDivisor = analogRead(A2);
 
   Vs = (LeituraShunt - Referencia) * (v_arduino / range);
-  Is = (Vs / Rs)*1000; //valor da corrente em mA
+  Is = (Vs / Rs); //valor da corrente em mA
 
   V1 = (LeituraDivisor - Referencia) * (v_arduino / range);
   Va = (V1) * (R1+ R2)/(R1) - (Vs); //valor da tensão em V
+
+  V_sen = (1/0.0666) * (Va - (Is * 16.6))*10;
 }
 
 void pegaRPM(){
@@ -89,6 +120,13 @@ void pegaRPM(){
   attachInterrupt(digitalPinToInterrupt(52), contador, RISING);
   Timer1.start();
     
+}
+
+void mudaPwm(){
+  analogWrite(capacitorPin, 127); //50%
+  analogWrite(motorPin2, val);
+  analogWrite(motorPin3, val);
+  analogWrite(motorPin4, val);
 }
 
 void contador(){

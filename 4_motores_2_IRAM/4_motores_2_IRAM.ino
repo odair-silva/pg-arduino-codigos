@@ -24,9 +24,9 @@ int motorPin4 = 4;
 //int motorPin5 = 5;
 int capacitorPin = 6;// PWM com valor de 50% para emular o banco de capacitores
 int analogPin = A0;
-int val = 0;
+int val = 127;
 int reading = 0;
-
+int pwm_leitura = 0;
 long previousMillis = 0;
 long interval = 500; 
 void setup() {
@@ -35,30 +35,24 @@ void setup() {
 }
 
 void loop() {
-//  val = analogRead(analogPin);
-//
-//  //garantir que não apareça valor 0 por questões do módulo IRAM, não é o ideal
-//  if(val == 0){
-//      val = 20;
-//  }
-//  if(val == 1023){
-//      val = 1000;
-//  }
+  pwm_leitura = Serial.read();
 
-  unsigned long currentMillis = millis();
-  if(currentMillis - previousMillis > interval) {
-    // save the last time you blinked the LED 
-    previousMillis = currentMillis;   
- 
-    // if the LED is off turn it on and vice-versa:
-    if (ledState == LOW)
-      ledState = HIGH;
-    else
-      ledState = LOW;
- 
-    // set the LED with the ledState of the variable:
-    digitalWrite(ledPin, ledState);
+  if(pwm_leitura == 'a'){
+    val++;
   }
+
+  if(pwm_leitura == 'd'){
+    val--;
+  }
+
+  //garantir que não apareça valor 0 por questões do módulo IRAM, não é o ideal
+  if(val <= 1){
+      val = 1;
+  }
+  if(val >= 254){
+      val = 254;
+  }
+
   
   analogWrite(capacitorPin, 127); //50%
   analogWrite(motorPin2, val);
