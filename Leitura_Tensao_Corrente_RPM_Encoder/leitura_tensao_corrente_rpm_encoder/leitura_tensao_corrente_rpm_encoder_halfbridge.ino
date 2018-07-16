@@ -3,6 +3,7 @@ Automação pela Universidade Federal do Rio Grande. Código para a leitura de c
 e velocidade em RPM de um motor DC*/
 
 #include<DueTimer.h> //biblioteca para fazer interrupções
+//#include<FlexiTimer2.h>
 
 //definições das constantes do sistema/código
 volatile const float v_arduino = 3.3;
@@ -10,6 +11,7 @@ volatile const int range = 1023;
 volatile const int Rs = 15; //resistor definido para que a tensão máxima seja 15v
 volatile const int R1 = 2460;
 volatile const int R2 = 9870;
+volatile const float rad_to_rpm = 9.549296596425384;
 
 //definições das variáveis para a leitura da tensão e corrente  
 volatile float Referencia = 0;
@@ -23,7 +25,7 @@ volatile float Is = 0; // corrente no resistor shunt
 volatile float Va = 0; // tensão de interesse, tensão no motor
 
 //definições das variáveis da leitura do RPM
-volatile int RPM = 0;;
+volatile int RPM = 0;
 volatile unsigned long pulsos = 0;
 volatile unsigned long timeold = 0;
 volatile unsigned int pulsos_por_volta = 32;
@@ -35,7 +37,7 @@ volatile int motorPin2 = 2;
 volatile int motorPin3 = 3;
 volatile int motorPin4 = 4;
 volatile int capacitorPin = 6;
-volatile int val = 253;
+volatile int val = 127;
 volatile int pwm_leitura = 0;
 
 volatile int V_sen = 0;
@@ -57,6 +59,9 @@ void setup() {
   
   //chama a função pegaRPM a cada 100ms 
   Timer1.attachInterrupt(pegaRPM).start(100000);
+  Timer2.attachInterrupt(mudaPwm).start(1000);
+//  FlexiTimer2 :: set (100, pegaRPM); // chama a f u n o flash a cada 2milisegundo
+//  FlexiTimer2 :: start ();
   
   //chama a função contador a cada subida de borda do pulso do encoder
   attachInterrupt(digitalPinToInterrupt(52), contador, RISING); 
@@ -79,16 +84,16 @@ void loop() {
  
   
   //nesse loop estarão somente os prints
-//  Serial.print("PWM: ");
-//  Serial.print(val); //plotta o gráfico da tensão sobre o motor
-  Serial.print("  Tensão de entrada: ");
-  Serial.print(Va); //plotta o gráfico da tensão sobre o motor
-  Serial.print("  Corrente no motor: ");
-  Serial.print(Is); //plotta o gráfico da corrente no motor
+  Serial.print("PWM: ");
+  Serial.print(val); //plotta o gráfico da tensão sobre o motor
+//  Serial.print("  Tensão de entrada: ");
+//  Serial.print(Va); //plotta o gráfico da tensão sobre o motor
+//  Serial.print("  Corrente no motor: ");
+//  Serial.print(Is); //plotta o gráfico da corrente no motor
   Serial.print("  RPM_Encoder = ");
-  Serial.print(RPM, DEC);
-  Serial.print("  RPM_Sensorless = ");
-  Serial.println(V_sen, DEC);
+  Serial.println(RPM, DEC);
+//  Serial.print("  RPM_Sensorless = ");
+//  Serial.println(V_sen, DEC);
 }
 
 
@@ -96,9 +101,9 @@ void loop() {
 //necessárias.
 void pegaCorrenteTensao(){
   //definições de variáveis
-  LeituraShunt = analogRead(A0);
-  Referencia = analogRead(A1);
-  LeituraDivisor = analogRead(A2);
+  LeituraShunt = analogRead(A0)*1.15;
+  Referencia = analogRead(A1)*1.15;
+  LeituraDivisor = analogRead(A2)*1.15;
 
   Vs = (LeituraShunt - Referencia) * (v_arduino / range);
   Is = (Vs / Rs); //valor da corrente em mA
@@ -106,11 +111,12 @@ void pegaCorrenteTensao(){
   V1 = (LeituraDivisor - Referencia) * (v_arduino / range);
   Va = (V1) * (R1+ R2)/(R1) - (Vs); //valor da tensão em V
 
-  V_sen = (1/0.0666) * (Va - (Is * 16.6))*10;
+  V_sen = (1/0.0666) * (Va - (Is * 16.6)) * rad_to_rpm;
 }
 
 void pegaRPM(){
-  Timer1.stop();
+  //Timer1.stop();
+  //FlexiTimer2 :: stop ();
   detachInterrupt(digitalPinToInterrupt(52));
 
   RPM = (60 * 1000 / pulsos_por_volta) / (millis() - timeold) * pulsos;
@@ -118,13 +124,14 @@ void pegaRPM(){
   pulsos = 0;
       
   attachInterrupt(digitalPinToInterrupt(52), contador, RISING);
-  Timer1.start();
+  //FlexiTimer2 :: start ();
+  //Timer1.start();
     
 }
 
 void mudaPwm(){
   analogWrite(capacitorPin, 127); //50%
-  analogWrite(motorPin2, val);
+  analogWrite(motorPin2, 127);
   analogWrite(motorPin3, val);
   analogWrite(motorPin4, val);
 }
