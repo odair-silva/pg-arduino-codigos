@@ -42,7 +42,7 @@ volatile int pwm_leitura = 0;
 volatile int pwm1 = 0;
 volatile int pwm2 = 0;
 
-volatile float Vcc = 14;
+volatile float Vcc = 14; //tensão fornecida pela fonte de alimentação
 
 volatile int V_sen = 0;
 
@@ -75,11 +75,11 @@ void loop() {
   pwm_leitura = Serial.read();
 
   //condições para que o pwm não passe de 254 nem diminua menos que 127
-  if(pwm_leitura == 'a' && Va <= 10){
+  if(pwm_leitura == 'a' && Va <= 11){
     Va++;
   }
 
-  if(pwm_leitura == 'd' && Va >= -10){
+  if(pwm_leitura == 'd' && Va >= -11){
     Va--;
   }
   
@@ -132,18 +132,19 @@ void pegaRPM(){
 }
 
 void mudaPwm(){
-  pwm1 = (Va / Vcc)*126 + 126;
-  pwm2 = 255 - pwm1;
+  //Vcc = 14
+  pwm1 = (Va / Vcc)*127 + 127;
+  pwm2 = 254 - pwm1;
   
   //analogWrite(capacitorPin, 127); //50%
   if(Va > 0){
-    analogWrite(motorPin2, pwm1*1.42);
-    analogWrite(motorPin3, pwm2*1.42);
+    analogWrite(motorPin2, pwm1*1.4);
+    analogWrite(motorPin3, pwm2*1.4);
     }
 
    if(Va <= 0){
-    analogWrite(motorPin2, pwm1*0.72);
-    analogWrite(motorPin3, pwm2*0.72);
+    analogWrite(motorPin2, pwm1*1.4);
+    analogWrite(motorPin3, pwm2*1.4);
     }
   //analogWrite(motorPin4, val);
 }
